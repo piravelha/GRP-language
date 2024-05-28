@@ -2,6 +2,8 @@
 
 GRP is a simple, stack-based language currently written in Python, that transpiles to Lua.
 
+(This whole thing is currently a bit of a mess, since it is 100% written on my phone, at 2 in the morning, so please report bugs and any feedback you have!)
+
 # Snippets
 
 ## Summing two numbers
