@@ -1,3 +1,31 @@
+local function _repr(obj)
+  if type(obj) ~= "table" then
+    return tostring(obj)
+  end
+  local str = "["
+  for i, elem in pairs(obj) do
+    local r = _repr(elem)
+    if r:find("%s") then
+      str = str .. "(" .. r .. ")"
+    else
+      str = str .. _repr(elem)
+    end
+    if i < #obj then
+      str = str .. " "
+    end
+  end
+
+  return str .. "]"
+end
+
+local function _clone(tbl)
+  local new = {}
+  for i, v in pairs(tbl) do
+    new[i] = v
+  end
+  return new
+end
+
 local _stack = {
   values = {},
   push = function(self, x)
@@ -8,14 +36,7 @@ local _stack = {
     return popped
   end,
   print = function(self)
-    local str = "["
-    for i, x in pairs(self.values) do
-      str = str .. tostring(x)
-      if i < #self.values then
-        str = str .. " "
-      end
-    end
-    print("(STACK)", str .. "]")
+    print(_repr(self.values))
   end
 }
 

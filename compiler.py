@@ -6,6 +6,14 @@ import subprocess
 
 debug = False
 
+var_count_ = 0
+def var_count():
+  global var_count_
+  var_count_ += 1
+  return var_count_
+
+def new_var():
+  return "_var_%d" % var_count()
 
 def compile_number(code, value):
   if debug:
@@ -16,8 +24,42 @@ def compile_number(code, value):
   return code
 
 def compile_combinator(code, operators):
-  for op in operators:
-    code = compile_operator(code, op)
+  if len(operators) == 1:
+    return compile_tree(code, operators[0])
+  if operators[0] == "$":
+    temp = new_var()
+    code += "%s = {}\n" % temp
+    a = new_var()
+    i = new_var()
+    x = new_var()
+    code += "%s = _stack:pop()\n" % a
+    code += "for %s, %s in pairs(%s) do\n" % (i, x, a)
+    code += "_stack:push(%s)\n" % x
+    code = compile_combinator(code, operators[1:])
+    code += "%s[#%s - %s + 1] = _stack:pop()\n" % (temp, a, i)
+    code += "end\n"
+    code += "_stack:push(_clone(%s))\n" % temp
+
+  elif operators[0] == "<*>":
+    temp = new_var()
+    a = new_var()
+    x = new_var()
+    code += "%s = _stack:pop()\n" % a
+    code += "%s = nil\n" % temp
+    code += "for _, %s in pairs(%s) do\n" % (x, a)
+    code += "if not %s then\n" % temp
+    code += "%s = %s\n" % (temp, x)
+    code += "else\n"
+    code += "_stack:push(%s)\n" % temp
+    code += "_stack:push(%s)\n" % x
+    code = compile_combinator(code, operators[1:])
+    code += "%s = _stack:pop()\n" % temp
+    code += "end\n"
+    code += "end\n"
+    code += "_stack:push(%s)\n" % temp
+  else:
+    for op in operators:
+      code = compile_tree(code, op)
   return code
 
 def compile_operator(code, value):
@@ -41,7 +83,7 @@ def compile_operator(code, value):
     code += "_stack:push(b %s a and 1 or 0)" % value
   elif value == "|<":
     code += "a = _stack:pop()\n"
-    code += "print(a)\n"
+    code += "print(_repr(a))\n"
   elif value == ".":
     code += "a = _stack:pop()\n"
     code += "_stack:push(a)\n"
@@ -72,11 +114,15 @@ def compile_name(code, value):
     code += "_stack:print()\n"
   return code
 
-var_count_ = 0
-def var_count():
-  global var_count_
-  var_count_ += 1
-  return var_count_
+# TODO: add debug support
+def compile_array(code, values):
+  for val in values:
+    code = compile_tree(code, val)
+  code += "temp = {}\n"
+  for i in range(len(values)):
+    code += "temp[%d] = _stack:pop()\n" % (i + 1)
+  code += "_stack:push(_clone(temp))\n"
+  return code
 
 def compile_symbol(code, value):
   if debug:
@@ -137,6 +183,8 @@ def compile_tree(code, tree):
       return compile_name(code, tree.value)
   if tree.data == "symbol":
     return compile_symbol(code, *tree.children)
+  if tree.data == "array":
+    return compile_array(code, tree.children)
   if tree.data == "declaration":
     return compile_declaration(code, *tree.children)
   if tree.data == "expression":

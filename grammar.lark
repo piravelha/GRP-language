@@ -13,7 +13,7 @@ expression: atom+
 
 paren: "(" "\n"* ("\n"* atom "\n"*)+ "\n"* ")"
 
-combinator: "(" "\n"* ("\n"* OPERATOR "\n"*) "\n"* ")"
+combinator: "{" "\n"* ("\n"* atom "\n"*)+ "\n"* "}"
 
 if: "if" "\n"* atom
 
@@ -21,19 +21,22 @@ ifelse: "if" "\n"* atom "\n"* "else" "\n"* atom
 
 while: "while" "\n"* atom "\n"* "loop" "\n"* atom
 
+array: "[" "\n"* ("\n"* atom "\n"*)+ "]" | "[" "\n"* "]"
+
 symbol: ":" NAME
 
 ?atom: NUMBER
      | OPERATOR
      | NAME
      | symbol
+     | array
      | paren
      | combinator
      | if
      | ifelse
      | while
 
-OPERATOR: /[+\-*\/!@#$%&;,?\=~\|<>{}\[\]_.^]+/
+OPERATOR: /[+\-*\/!@#$%&;,?\=~\|<>_.^]+/
 
 NAME: /[A-Z][a-zA-Z0-9]*/
 

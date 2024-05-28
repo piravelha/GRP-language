@@ -1,3 +1,31 @@
+local function _repr(obj)
+  if type(obj) ~= "table" then
+    return tostring(obj)
+  end
+  local str = "["
+  for i, elem in pairs(obj) do
+    local r = _repr(elem)
+    if r:find("%s") then
+      str = str .. "(" .. r .. ")"
+    else
+      str = str .. _repr(elem)
+    end
+    if i < #obj then
+      str = str .. " "
+    end
+  end
+
+  return str .. "]"
+end
+
+local function _clone(tbl)
+  local new = {}
+  for i, v in pairs(tbl) do
+    new[i] = v
+  end
+  return new
+end
+
 local _stack = {
   values = {},
   push = function(self, x)
@@ -8,14 +36,7 @@ local _stack = {
     return popped
   end,
   print = function(self)
-    local str = "["
-    for i, x in pairs(self.values) do
-      str = str .. tostring(x)
-      if i < #self.values then
-        str = str .. " "
-      end
-    end
-    print("(STACK)", str .. "]")
+    print(_repr(self.values))
   end
 }
 
@@ -51,7 +72,43 @@ b = _stack:pop()
 _stack:push(b * a)
 end
 end
-_stack:push(50)
-Factorial()
+_stack:push(1)
+_stack:push(2)
+temp = {}
+temp[1] = _stack:pop()
+temp[2] = _stack:pop()
+_stack:push(_clone(temp))
+_stack:push(3)
+_stack:push(4)
+temp = {}
+temp[1] = _stack:pop()
+temp[2] = _stack:pop()
+_stack:push(_clone(temp))
+temp = {}
+temp[1] = _stack:pop()
+temp[2] = _stack:pop()
+_stack:push(_clone(temp))
+_var_3 = {}
+_var_4 = _stack:pop()
+for _var_5, _var_6 in pairs(_var_4) do
+_stack:push(_var_6)
+_var_8 = _stack:pop()
+_var_7 = nil
+for _, _var_9 in pairs(_var_8) do
+if not _var_7 then
+_var_7 = _var_9
+else
+_stack:push(_var_7)
+_stack:push(_var_9)
 a = _stack:pop()
-print(a)
+b = _stack:pop()
+_stack:push(b + a)
+_var_7 = _stack:pop()
+end
+end
+_stack:push(_var_7)
+_var_3[#_var_4 - _var_5 + 1] = _stack:pop()
+end
+_stack:push(_clone(_var_3))
+a = _stack:pop()
+print(_repr(a))

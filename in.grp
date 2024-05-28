@@ -1,10 +1,7 @@
-; GRP - by piraloco
-Factorial :: . :X (
-  while (X 1 >)
-  loop (
-    X 1 - . :X *
-  )
-)
+; GRP - (Grape) by piraloco
+MapSum :: {
+  $ <*> +
+}
 
-50 Factorial |<
+[[1 2] [3 4]] MapSum |<
 
