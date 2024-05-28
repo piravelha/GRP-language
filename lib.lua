@@ -2,16 +2,37 @@ local function _repr(obj)
   if type(obj) ~= "table" then
     return tostring(obj)
   end
+  if obj._str then
+    local allChars = true
+    for i, x in pairs(obj) do
+      if type(i) == "number" then
+        if type(x) ~= "string" or #x ~= 1 then
+          allChars = false
+        end
+      end
+    end
+    if allChars then
+      local str = ""
+      for i, x in pairs(obj) do
+        if type(i) == "number" then
+          str = str .. x
+        end
+      end
+      return str
+    end
+  end
   local str = "["
   for i, elem in pairs(obj) do
-    local r = _repr(elem)
-    if r:find("%s") then
-      str = str .. "(" .. r .. ")"
-    else
-      str = str .. _repr(elem)
-    end
-    if i < #obj then
-      str = str .. " "
+    if type(i) == "number" then
+      local r = _repr(elem)
+      if r:find("%s") then
+        str = str .. "(" .. r .. ")"
+      else
+        str = str .. _repr(elem)
+      end
+      if i < #obj then
+        str = str .. " "
+      end
     end
   end
 
@@ -24,6 +45,14 @@ local function _clone(tbl)
     new[i] = v
   end
   return new
+end
+
+local function _split(str)
+  local tbl = {_str = true}
+  for i= 1, #str do
+    table.insert(tbl, str:sub(i, i))
+  end
+  return tbl
 end
 
 local _stack = {

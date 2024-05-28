@@ -23,22 +23,41 @@ def compile_number(code, value):
     code += "_stack:print()\n"
   return code
 
+def compile_string(code, value):
+  code += "_stack:push({_str = true, %s})\n" % ", ".join(["\"%s\"" % c for c in value[1:-1]])
+  return code
+
 def compile_combinator(code, operators):
   if len(operators) == 1:
     return compile_tree(code, operators[0])
-  if operators[0] == "$":
+  if operators[0] == "$>":
     temp = new_var()
     code += "%s = {}\n" % temp
     a = new_var()
     i = new_var()
     x = new_var()
     code += "%s = _stack:pop()\n" % a
-    code += "for %s, %s in pairs(%s) do\n" % (i, x, a)
+    code += "for %s = #%s, 1, -1 do\n" % (i, a)
+    code += "%s = %s[%s]\n" % (x, a, i)
     code += "_stack:push(%s)\n" % x
     code = compile_combinator(code, operators[1:])
     code += "%s[#%s - %s + 1] = _stack:pop()\n" % (temp, a, i)
     code += "end\n"
     code += "_stack:push(_clone(%s))\n" % temp
+  elif operators[0] == "&>":
+    temp = new_var()
+    code += "%s = {}\n" % temp
+    a = new_var()
+    x = new_var()
+    code += "%s = _stack:pop()\n" % a
+    code += "for _, %s in pairs(%s) do\n" % (x, a)
+    code += "_stack:push(%s)\n" % x
+    code = compile_combinator(code, operators[1:])
+    code += "if _stack:pop() ~= 0 then\n"
+    code += "table.insert(%s, %s)\n" % (temp, x)
+    code += "end\n"
+    code += "end\n"
+    code += "_stack:push(%s)\n" % temp
 
   elif operators[0] == "<*>":
     temp = new_var()
@@ -66,29 +85,37 @@ def compile_operator(code, value):
   if debug:
     code += "print(\"(DEBUG) Performing '%s'\")" % value
 
-  if value in ["+", "-", "*", "/"]:
+  if value in ["+", "-", "*", "/", "^"]:
+    code += "-- %s--\n" % value
     code += "a = _stack:pop()\n"
     code += "b = _stack:pop()\n"
     code += "_stack:push(b %s a)\n" % value
-  elif value == "-^":
+  elif value == "^-":
     code += "a = _stack:pop()\n"
     code += "_stack:push(-a)\n"
+  elif value == "#":
+    code += "a = _stack:pop()\n"
+    code += "_stack:push(#a)\n"
   elif value == "=":
     code += "a = _stack:pop()\n"
     code += "b = _stack:pop()\n"
     code += "_stack:push(b == a and 1 or 0)\n"
   elif value in ["<", ">", "<=", ">="]:
+    code += "-- %s --\n" % value
     code += "a = _stack:pop()"
     code += "b = _stack:pop()"
     code += "_stack:push(b %s a and 1 or 0)" % value
   elif value == "|<":
+    code += "-- dump (|<) --\n"
     code += "a = _stack:pop()\n"
     code += "print(_repr(a))\n"
   elif value == ".":
+    code += "-- dup (.) --\n"
     code += "a = _stack:pop()\n"
     code += "_stack:push(a)\n"
     code += "_stack:push(a)\n"
   elif value == "..":
+    code += "-- double dup (..) --\n"
     code += "a = _stack:pop()\n"
     code += "b = _stack:pop()\n"
     code += "_stack:push(b)\n"
@@ -96,10 +123,32 @@ def compile_operator(code, value):
     code += "_stack:push(b)\n"
     code += "_stack:push(a)\n"
   elif value == "<|>":
+    code += "-- flip (<|>) --\n"
     code += "a = _stack:pop()\n"
     code += "b = _stack:pop()\n"
     code += "_stack:push(a)\n"
     code += "_stack:push(b)\n"
+  elif value == "++":
+    code += "-- append (++) --\n"
+    code += "a = _stack:pop()\n"
+    code += "b = _stack:pop()\n"
+    code += "c = _clone(b)\n"
+    code += "for x = 1, #a do\n"
+    code += "table.insert(c, a[x])\n"
+    code += "end\n"
+    code += "_stack:push(c)\n"
+  elif value == "|+|":
+    code += "-- max (|+|) --\n"
+    code += "a = _stack:pop()\n"
+    code += "b = _stack:pop()\n"
+    code += "if a > b then\n"
+    code += "_stack:push(a)\n"
+    code += "else\n"
+    code += "_stack:push(b)\n"
+    code += "end\n"
+  elif value == "?":
+    code += "a = _stack:pop()\n"
+    code += "_stack:push(_split(_repr(a)))\n"
   else:
     assert False, "Invalid operator: %s" % value
   if debug:
@@ -181,6 +230,8 @@ def compile_tree(code, tree):
       return compile_operator(code, tree.value)
     if tree.type == "NAME":
       return compile_name(code, tree.value)
+    if tree.type == "STRING":
+      return compile_string(code, tree.value)
   if tree.data == "symbol":
     return compile_symbol(code, *tree.children)
   if tree.data == "array":

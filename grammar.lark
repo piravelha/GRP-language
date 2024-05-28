@@ -10,7 +10,6 @@ declaration: NAME "::" expression
 ?expression_: "\n"* expression "\n"*
 
 expression: atom+
-
 paren: "(" "\n"* ("\n"* atom "\n"*)+ "\n"* ")"
 
 combinator: "{" "\n"* ("\n"* atom "\n"*)+ "\n"* "}"
@@ -25,7 +24,7 @@ array: "[" "\n"* ("\n"* atom "\n"*)+ "]" | "[" "\n"* "]"
 
 symbol: ":" NAME
 
-?atom: NUMBER
+?atom: STRING
      | OPERATOR
      | NAME
      | symbol
@@ -35,11 +34,14 @@ symbol: ":" NAME
      | if
      | ifelse
      | while
+     | NUMBER
 
 OPERATOR: /[+\-*\/!@#$%&;,?\=~\|<>_.^]+/
 
 NAME: /[A-Z][a-zA-Z0-9]*/
+ 
+STRING: /"[^"]*"/
 
-NUMBER: /\d+/
+NUMBER: /\d+(\.\d+)?/
 
 %ignore /[ \r\t]+/
