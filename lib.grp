@@ -1,0 +1,39 @@
+Iota :: :L (
+  L 0 <= if [0]
+  else (
+    [L]
+    L 1 - :L
+    L Iota <|> ++
+  )
+)
+
+Range :: :Max :Min (
+  [] :Acc
+  while (Min Max <)
+  loop (
+    Acc
+    [(Min 1 + . :Min)]
+    ++ :Acc
+  ) Acc
+)
+
+Repeat :: :N :X (
+  [] :Acc
+  while (N 1 >)
+  loop (
+    Acc [X] ++ :Acc
+    N 1 - :N
+  ) Acc
+)
+
+Prime :: :N (
+  N 2 < if 0
+  else (
+    [2 3] N <# if 1
+    else (
+      2 N Sqrt Range
+      {$> (N <|> %)}
+      {<> &}
+    )
+  )
+)

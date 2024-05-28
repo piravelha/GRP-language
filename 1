@@ -35,6 +35,8 @@ def compile_macro(code, name, splice, body):
   return code
 
 def compile_combinator(code, operators):
+  if len(operators) == 1:
+    return compile_tree(code, operators[0])
   if operators[0] == "$>":
     temp = new_var()
     code += "%s = {}\n" % temp
@@ -45,57 +47,9 @@ def compile_combinator(code, operators):
     code += "for %s, %s in pairs(%s) do\n" % (i, x, a)
     code += "_stack:push(%s)\n" % x
     code = compile_combinator(code, operators[1:])
-    code += "table.insert(%s, _stack:pop())\n" % (temp)
+    code += "table.insert(%s, 0, _stack:pop())\n" % (temp)
     code += "end\n"
     code += "_stack:push(_clone(%s))\n" % temp
-  elif operators[0] == "$|>":
-    temp = new_var()
-    code += "%s = {}\n" % temp
-    a = new_var()
-    i = new_var()
-    x = new_var()
-    x2 = new_var()
-    code += "%s = _stack:pop()\n" % a
-    code += "for %s, %s in pairs(%s) do\n" % (i, x, a)
-    code += "_stack:push(%s)\n" % x
-    code = compile_combinator(code, operators[1:])
-    code += "for _, %s in pairs(_stack:pop()) do\n" % (x2)
-    code += "table.insert(%s, %s)\n" % (temp, x2)
-    code += "end\n"
-    code += "end\n"
-    code += "_stack:push(_clone(%s))\n" % temp
-  elif operators[0] == "<:*>":
-    temp = new_var()
-    code += "%s = {}\n" % temp
-    a = new_var()
-    b = new_var()
-    i = new_var()
-    code += "%s = _stack:pop()\n" % a
-    code += "%s = _stack:pop()\n" % b
-    code += "for %s, _ in pairs(%s) do\n" % (i, b)
-    code += "if %s[%s] == nil then break end\n" % (a, i)
-    code += "_stack:push(%s[%s])\n" % (b, i)
-    code += "_stack:push(%s[%s])\n" % (a, i)
-    code = compile_combinator(code, operators[1:])
-    code += "%s[%s] = _stack:pop()\n" % (temp, i)
-    code += "end\n"
-    code += "_stack:push(%s)\n" % temp
-  elif operators[0] == "#>":
-    temp = new_var()
-    code += "%s = 0\n" % temp
-    a = new_var()
-    x = new_var()
-    i = new_var()
-    code += "%s = _stack:pop()\n" % a
-    code += "for %s, %s in pairs(%s) do\n" % (i, x, a)
-    code += "_stack:push(%s)\n" % x
-    code = compile_combinator(code, operators[1:])
-    code += "if _stack:pop() ~= 0 then\n"
-    code += "%s = %s\n" % (temp, i)
-    code += "break\n"
-    code += "end\n"
-    code += "end\n"
-    code += "_stack:push(%s)\n" % temp
   elif operators[0] == "&>":
     temp = new_var()
     code += "%s = {}\n" % temp
@@ -130,24 +84,24 @@ def compile_combinator(code, operators):
     code += "_stack:push(%s)\n" % temp
   else:
     ops = "_flatten("
-    for i, o in enumerate(operators):
+    i = -1
+    for i, o in enumerate(operators[1:]):
       if isinstance(o, Tree) and o.data == "splice":
         ops += o.children[0]
       else:
-        if i < len(operators[1:]):
-          ops += "{" + o + "}"
-          ops += ", "
-        else:
-          o = compile_tree("", o)
-          ops += "{function()\n%s\nend}" % o
-    ops = ops + ")"
-    if isinstance(operators[0], Tree) and operators[0].data == "splice":
-      code += "_invoke(%s)\n" % operators[0].children[0]
-    else:
-      code += "_invoke(%s)\n" % (ops)
+        if i >= len(operators[1:]) - 1:
+          if i == 0: i = -1
+          break
+        ops += "{" + o + "}"
+      ops += ", "
+    ops = ops[:-2] + ")"
+    if i < 0:
+      ops = "{}"
+    code += "%s(%s)\n" % (operators[0], ops)
   return code
 
 def compile_operator(code, value):
+
   if value in ["+", "-", "*", "/", "^", "%"]:
     code += "-- %s --\n" % value
     code += "a = _stack:pop()\n"
@@ -184,9 +138,6 @@ def compile_operator(code, value):
     code += "a = _stack:pop()\n"
     code += "_stack:push(a)\n"
     code += "_stack:push(a)\n"
-  elif value == ",":
-    code += "-- pop (,) --\n"
-    code += "_stack:pop()\n"
   elif value == "..":
     code += "-- double dup (..) --\n"
     code += "a = _stack:pop()\n"
@@ -231,10 +182,6 @@ def compile_operator(code, value):
     code += "-- head (/.) --\n"
     code += "a = _stack:pop()\n"
     code += "_stack:push(a[1])\n"
-  elif value == "./":
-    code += "-- last (./) --\n"
-    code += "a = _stack:pop()\n"
-    code += "_stack:push(a[#a])\n"
   elif value == "/@":
     code += "-- tail (/@) --\n"
     code += "a = _stack:pop()\n"
@@ -243,46 +190,6 @@ def compile_operator(code, value):
     code += "table.insert(b, a[i])\n"
     code += "end\n"
     code += "_stack:push(b)\n"
-  elif value == "<#":
-    code += "-- find (<#) --\n"
-    code += "a = _stack:pop()\n"
-    code += "b = _stack:pop()\n"
-    code += "c = 0\n"
-    code += "for i, x in pairs(b) do\n"
-    code += "if x == a then\n"
-    code += "c = i\n"
-    code += "break\n"
-    code += "end\n"
-    code += "end\n"
-    code += "_stack:push(c)\n"
-  elif value == "|=|":
-    code += "-- box (|=|) --\n"
-    code += "a = _stack:pop()\n"
-    code += "_stack:push({a})\n"
-  elif value == "&":
-    code += "-- and (&) --\n"
-    code += "a = _stack:pop()\n"
-    code += "b = _stack:pop()\n"
-    code += "_stack:push(a ~= 0 and b or 0)\n"
-  elif value == "%^":
-    code += "-- indices (%^) --\n"
-    code += "a = _stack:pop()\n"
-    code += "b = {}\n"
-    code += "for i, x in pairs(a) do\n"
-    code += "if x ~= 0 then\n"
-    code += "table.insert(b, i)\n"
-    code += "end\n"
-    code += "end\n"
-    code += "_stack:push(b)\n"
-  elif value == "<:>":
-    code += "a = _stack:pop()\n"
-    code += "b = _stack:pop()\n"
-    code += "c = {}\n"
-    code += "for i, x in pairs(b) do\n"
-    code += "if a[i] == nil then break end\n"
-    code += "c[i] = {x, a[i]}\n"
-    code += "end\n"
-    code += "_stack:push(c)\n"
   else:
     assert False, "Invalid operator: %s" % value
   return code
@@ -296,7 +203,7 @@ def compile_array(code, values):
     code = compile_tree(code, val)
   code += "temp = {}\n"
   for i in range(len(values)):
-    code += "temp[%d] = _stack:pop()\n" % (len(values) - i)
+    code += "temp[%d] = _stack:pop()\n" % (i + 1)
   code += "_stack:push(_clone(temp))\n"
   return code
 
@@ -306,7 +213,7 @@ def compile_symbol(code, value):
   if marks:
     mark = "_%s" % marks[0][0]
   var = "_symb_%d%s" % (var_count(), mark)
-  code += "local %s = _stack:pop()\n" % var
+  code += "%s = _stack:pop()\n" % var
   code += "%s = function()\n" % value
   code += "_stack:push(%s)\n" % var
   code += "end\n"

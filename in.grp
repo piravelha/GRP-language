@@ -1,6 +1,8 @@
-Solution :: . (
-  {&> (0 >)} #
-  <|> {&> (0 <)} #
-) |+|
+
+MeuPenisCm :: (
+  0 6942 Range {<> +}
+)
+
+eval MeuPenisCm ? "cm" ++ |<
 
 

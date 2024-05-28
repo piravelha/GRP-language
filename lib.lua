@@ -25,7 +25,7 @@ local function _repr(obj)
   for i, elem in pairs(obj) do
     if type(i) == "number" then
       local r = _repr(elem)
-      if r:find("%s") then
+      if r:find("%s") and not r:sub(1, 1) == "[" and not r:sub(-1, -1) == "]" then
         str = str .. "(" .. r .. ")"
       else
         str = str .. _repr(elem)
@@ -37,6 +37,20 @@ local function _repr(obj)
   end
 
   return str .. "]"
+end
+
+local function _flatten(...)
+  local new = {}
+  for _, o in pairs({...}) do
+    if type(o) == "table" then
+      for _, o2 in pairs(o) do
+        table.insert(new, o2)
+      end
+    else
+      table.insert(new, o)
+    end
+  end
+  return new
 end
 
 local function _clone(tbl)
@@ -69,4 +83,35 @@ local _stack = {
   end
 }
 
+function _invoke(args)
+  if not args or #args == 0 then
+    return
+  end
+  if #args == 1 then
+    return args[1]()
+  end
+  local head = args[1]
+  table.remove(args, 1)
+  head(args)
+end
+
+
+
+function Sqrt()
+  a = _stack:pop()
+  _stack:push(math.sqrt(a))
+end
+
+
+function RandInt()
+  a = _stack:pop()
+  b = _stack:pop()
+  math.randomseed(os.time() + os.clock())
+  _stack:push(math.random(b, a))
+end
+
+function Random()
+  math.randomseed(os.time() + os.clock())
+  _stack:push(math.random())
+end
 

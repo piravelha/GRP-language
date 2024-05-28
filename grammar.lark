@@ -1,18 +1,24 @@
 
 ?start: program
 
-?program: declaration_* expression_
+?program: declaration_* eval
 
-?declaration_: "\n"* declaration "\n"*
+?declaration_: "\n"* (declaration | macro) "\n"*
 
 declaration: NAME "::" expression
+
+macro: "{" NAME splice "}" "::" expression
+
+splice: "~" NAME
 
 ?expression_: "\n"* expression "\n"*
 
 expression: atom+
 paren: "(" "\n"* ("\n"* atom "\n"*)+ "\n"* ")"
 
-combinator: "{" "\n"* ("\n"* atom "\n"*)+ "\n"* "}"
+combinator: "{" "\n"* ("\n"* (atom | splice) "\n"*)+ "\n"* "}"
+
+eval: "eval" "\n"* ("\n"* atom "\n"*)+ "\n"*
 
 if: "if" "\n"* atom
 
@@ -20,11 +26,12 @@ ifelse: "if" "\n"* atom "\n"* "else" "\n"* atom
 
 while: "while" "\n"* atom "\n"* "loop" "\n"* atom
 
-array: "[" "\n"* ("\n"* atom "\n"*)+ "]" | "[" "\n"* "]"
+array: "[" "\n"* ("\n"* (atom | NUMBER) "\n"*)+ "]" | "[" "\n"* "]"
 
 symbol: ":" NAME
 
 ?atom: STRING
+     | CHARACTER
      | OPERATOR
      | NAME
      | symbol
@@ -36,12 +43,14 @@ symbol: ":" NAME
      | while
      | NUMBER
 
-OPERATOR: /[+\-*\/!@#$%&;,?\=~\|<>_.^]+/
+OPERATOR: /[+\-*\/!@#$%&;,?\=\|<>_.^][+\-*\/!@#$%;,?\=\|<>_.^:]*/
 
 NAME: /[A-Z][a-zA-Z0-9]*/
+
+CHARACTER: /'[^']'/
  
 STRING: /"[^"]*"/
 
-NUMBER: /\d+(\.\d+)?/
+NUMBER: /-?\d+(\.\d+)?/
 
 %ignore /[ \r\t]+/
