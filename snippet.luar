@@ -1,0 +1,52 @@
+
+-- Type Annotations --
+local add(x: int, y: int): int
+  return x + y
+end
+
+-- Casting --
+local int_ptr = (int*) some_pointer
+
+
+-- Inlining --
+inline local fast_add(x, y)
+  return x + y
+end
+
+
+-- Clojures (Lambdas) --
+local short_add = |x, y| x + y
+
+
+-- Modules --
+module Math
+  local add(x: int, y: int): int
+    return x + y
+  end
+end
+
+local sum = Math.add(1, 2)
+
+
+-- Monadic Error-Handling --
+local divide(x: double, y: double): Result
+  return if y == 0
+    then Err {"Division by zero"}
+    else Ok {x / y}
+end
+
+match divide(4, 2)
+  case Ok(result) => print(result)
+  case Err(error) => print(error)
+end
+
+-- Monadic Constructs / Chaining
+local safe_add(mx: Option, my: Option): Option
+  return mx.chain(|x| my.map(|y| x + y))
+end
+
+-- Asynchronous computing
+async local fetch_data(url: char[]): Result
+  local response = await http.get(url)!
+  return response.body
+end

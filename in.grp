@@ -1,0 +1,10 @@
+; GRP - by piraloco
+Factorial :: . :X (
+  while (X 1 >)
+  loop (
+    X 1 - . :X *
+  )
+)
+
+50 Factorial |<
+
