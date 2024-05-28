@@ -38,7 +38,7 @@ GRP is new-line sensitive, to fix this, multiline blocks were added.
 To create one, simply open a set of parenthesis, and inside them you can add as many linebreaks as you want.
 
 ### If Statements
-![Screenshot_20240528-040936_Termux](https://github.com/piravelha/GRP-language/assets/140568241/cbb8aa8a-2b9f-438e-96a7-3011c4948aa1)
+![Screenshot_20240528-041448_Termux](https://github.com/piravelha/GRP-language/assets/140568241/34c656ee-7b87-4fdd-bb2f-b7ed4d2ac75e)
 
 If statements, like in any other language, are a way to control the flow of execution of a program. In GRP, they are no different, you write them by putting the condition first, since the if statement evaluates the first thing on the stack (and pops it), the keyword "if", your true case, and an optional keyword "else" with a falze case.
 
