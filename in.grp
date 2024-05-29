@@ -1,5 +1,57 @@
 
-Num :: 1 2 +
+{RunLog ~X} :: :A (
+  {%# ~X} 0 = if (
+    A
+  )
+  else (
+    A {~.X} . |< {RunLog ~@X}
+  )
+)
 
-eval Num |<
+Test :: {
+  RunLog
+  (1 +) ;; prints 5
+  (2 *) ;; prints 10
+  (5 /) ;; prints 2
+  (3 ^) ;; prints 8
+  (5 %) ;; prints 3
+}
+
+eval 4 Test
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

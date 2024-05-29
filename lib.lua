@@ -44,7 +44,7 @@ end
 
 local function _eq(xs, ys)
   if type(xs) ~= "table" or type(ys) ~= "table" then
-    return xs == ys
+    return xs == ys and 1 or 0
   end
 
   for i, x in pairs(xs) do
@@ -111,6 +111,7 @@ local _stack = {
 }
 
 function _invoke(args)
+  args = args or {}
   if not args or #args == 0 then
     return
   end
@@ -118,6 +119,7 @@ function _invoke(args)
     return args[1]()
   end
   local head = args[1]
+  local args = _clone(args)
   table.remove(args, 1)
   head(args)
 end
@@ -138,6 +140,12 @@ function _data()
       return str
     end
   }))
+end
+
+
+function __HASH(X)
+  X = X or {}
+  _stack:push(#X)
 end
 
 

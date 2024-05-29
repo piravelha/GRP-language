@@ -44,7 +44,7 @@ end
 
 local function _eq(xs, ys)
   if type(xs) ~= "table" or type(ys) ~= "table" then
-    return xs == ys
+    return xs == ys and 1 or 0
   end
 
   for i, x in pairs(xs) do
@@ -111,6 +111,7 @@ local _stack = {
 }
 
 function _invoke(args)
+  args = args or {}
   if not args or #args == 0 then
     return
   end
@@ -118,6 +119,7 @@ function _invoke(args)
     return args[1]()
   end
   local head = args[1]
+  local args = _clone(args)
   table.remove(args, 1)
   head(args)
 end
@@ -138,6 +140,12 @@ function _data()
       return str
     end
   }))
+end
+
+
+function __HASH(X)
+  X = X or {}
+  _stack:push(#X)
 end
 
 
@@ -438,15 +446,73 @@ a = _stack:pop()
 b = _stack:pop()
 _stack:push(b / a)
 end
-function Num()
+function RunLog(X)
+local _symb_29 = _stack:pop()
+A = function()
+_stack:push(_symb_29)
+end
+_invoke(_flatten({__HASH}, X))
+_stack:push(0)
+-- equals (=) --
+a = _stack:pop()
+b = _stack:pop()
+_stack:push(_eq(a, b))
+if _stack:pop() ~= 0 then
+A()
+else
+A()
+_invoke(X)
+-- dup (.) --
+a = _stack:pop()
+_stack:push(a)
+_stack:push(a)
+-- dump (|<) --
+a = _stack:pop()
+print(_repr(a))
+_invoke(_flatten({RunLog}, (function()
+local tail = _clone(X)
+table.remove(tail, 1)
+return tail
+end)()))
+end
+end
+function Test()
+_invoke(_flatten({RunLog}, {function()
 _stack:push(1)
-_stack:push(2)
 -- + --
 a = _stack:pop()
 b = _stack:pop()
 _stack:push(b + a)
-end
-Num()
--- dump (|<) --
+
+end}, {function()
+_stack:push(2)
+-- * --
 a = _stack:pop()
-print(_repr(a))
+b = _stack:pop()
+_stack:push(b * a)
+
+end}, {function()
+_stack:push(5)
+-- / --
+a = _stack:pop()
+b = _stack:pop()
+_stack:push(b / a)
+
+end}, {function()
+_stack:push(3)
+-- ^ --
+a = _stack:pop()
+b = _stack:pop()
+_stack:push(b ^ a)
+
+end}, {function()
+_stack:push(5)
+-- % --
+a = _stack:pop()
+b = _stack:pop()
+_stack:push(b % a)
+
+end}))
+end
+_stack:push(4)
+Test()

@@ -128,23 +128,47 @@ def compile_combinator(code, operators):
     code += "end\n"
     code += "end\n"
     code += "_stack:push(%s)\n" % temp
+  elif operators[0] == "%#":
+    code = compile_combinator(
+      code,
+      [Token("NAME", "__HASH"),
+      *operators[1:]]
+    )
   else:
     ops = "_flatten("
     for i, o in enumerate(operators):
-      if isinstance(o, Tree) and o.data == "splice":
-        ops += o.children[0]
-      else:
-        if i < len(operators[1:]):
-          ops += "{" + o + "}"
+      if isinstance(o, Tree) and o.data.endswith("_splice"):
+        if o.data == "id_splice":
+          ops += o.children[0]
+        if o.data == "head_splice":
+          ops += "%s[1]" % o.children[0]
+        if o.data == "tail_splice":
+          ops += "(function()\n"
+          ops += "local tail = _clone(%s)\n" % o.children[0]
+          ops += "table.remove(tail, 1)\n"
+          ops += "return tail\n"
+          ops += "end)()"
+        if i < len(operators):
           ops += ", "
+      else:
+        if isinstance(o, Token) and o.type == "NAME":
+          ops += "{" + o + "}"
         else:
           o = compile_tree("", o)
           ops += "{function()\n%s\nend}" % o
+        if i < len(operators):
+          ops += ", "
+    if ops.endswith(", "):
+      ops = ops[:-2]
     ops = ops + ")"
-    if isinstance(operators[0], Tree) and operators[0].data == "splice":
+    if isinstance(operators[0], Tree) and operators[0].data in ["id_splice", "head_splice", "tail_splice"]:
       code += "_invoke(%s)\n" % operators[0].children[0]
     else:
       code += "_invoke(%s)\n" % (ops)
+  return code
+
+def compile_splice(code, value):
+  code += "_stack:push(%s or {})\n" % value
   return code
 
 def compile_operator(code, value):
@@ -438,6 +462,8 @@ def compile_tree(code, tree):
     return compile_combinator(code, tree.children)
   if tree.data == "macro":
     return compile_macro(code, *tree.children)
+  if tree.data == "id_splice":
+    return compile_splice(code, *tree.children)
   if tree.data == "if":
     return compile_if(code, *tree.children)
   if tree.data == "ifelse":

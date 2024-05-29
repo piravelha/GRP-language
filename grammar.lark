@@ -13,7 +13,13 @@ module: "module" NAME "::" "(" declaration_* ")"
 
 macro: "{" NAME splice "}" "::" expression
 
-splice: "~" NAME
+?splice: id_splice
+       | head_splice
+       | tail_splice
+
+id_splice: "~" NAME
+head_splice: "~." NAME
+tail_splice: "~@" NAME
 
 ?expression_: "\n"* expression "\n"*
 
