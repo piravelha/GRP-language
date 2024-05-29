@@ -48,7 +48,7 @@ To create one, simply open a set of parenthesis, and inside them you can add as 
 ![Screenshot_20240528-223428_Termux](https://github.com/piravelha/GRP-language/assets/140568241/0dad86e8-b809-4e9a-953d-229baf488058)
 
 
-If statements, like in any other language, are a way to control the flow of execution of a program. In GRP, they are no different, you write them by putting the condition first, since the if statement evaluates the first thing on the stack (and pops it), the keyword "if", your true case, and an optional keyword "else" with a falze case.
+If statements, like in any other language, are a way to control the flow of execution of a program. In GRP, they are no different, you write them by putting the condition first, since the if statement evaluates the first thing on the stack (and pops it), the keyword "if", your true case, and an optional keyword "else" with a false case.
 
 Note that there are no booleans in GRP currently, so false values are defined by 0, and any other value as true.
 
