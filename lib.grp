@@ -60,7 +60,7 @@ Reverse :: :List
   else Xs match {
     [] = case []
     else
-      (Xs /. Ys /. {~F} . |<)
+      (Xs /. Ys /. {~F})
       (Xs /@ Ys /@ {ZipWith ~F})
       :>
   }

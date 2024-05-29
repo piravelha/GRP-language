@@ -308,7 +308,7 @@ def compile_operator(code, value):
     code += "-- and (&) --\n"
     code += "a = _stack:pop()\n"
     code += "b = _stack:pop()\n"
-    code += "_stack:push(a ~= 0 and b or 0)\n"
+    code += "_stack:push(a ~= 0 and b ~= 0 and 1 or 0)\n"
   elif value == "%^":
     code += "-- indices (%^) --\n"
     code += "Indices()\n"
@@ -543,7 +543,7 @@ def compile(code):
   result = compile_tree(lib, tree)
   with open("out.lua", "w") as f:
     f.write(result)
-  subprocess.run(["lua54", "out.lua"])
+  subprocess.run(["luajit", "out.lua"])
 
 with open("in.grp") as f:
   compile(f.read())
