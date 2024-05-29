@@ -62,22 +62,12 @@ def compile_combinator(code, operators):
     code += "end\n"
     code += "end\n"
     code += "_stack:push(_clone(%s))\n" % temp
-  elif operators[0] == "<:*>":
-    temp = new_var()
-    code += "%s = {}\n" % temp
-    a = new_var()
-    b = new_var()
-    i = new_var()
-    code += "%s = _stack:pop()\n" % a
-    code += "%s = _stack:pop()\n" % b
-    code += "for %s, _ in pairs(%s) do\n" % (i, b)
-    code += "if %s[%s] == nil then break end\n" % (a, i)
-    code += "_stack:push(%s[%s])\n" % (b, i)
-    code += "_stack:push(%s[%s])\n" % (a, i)
-    code = compile_combinator(code, operators[1:])
-    code += "%s[%s] = _stack:pop()\n" % (temp, i)
-    code += "end\n"
-    code += "_stack:push(%s)\n" % temp
+  elif operators[0] == "<*>":
+    code = compile_combinator(
+      code,
+      [Token("NAME", "ZipWith"),
+      *operators[1:]]
+    )
   elif operators[0] == "#>":
     temp = new_var()
     code += "%s = 0\n" % temp
@@ -345,11 +335,12 @@ def compile_match(code, cases):
   for case in cases:
     if len(case.children) == 2:
       p, b = case.children
+      code += "_stack:push(%s)" % var
       code = compile_tree(code, p)
     else:
       p, b = None, case.children[0]
     if p:
-      code += "if _eq(%s, _stack:pop()) ~= 0 then\n" % var
+      code += "if _stack:pop() ~= 0 then\n"
     code = compile_tree(code, b)
     code += "%s = _stack:pop()\n" % var
     if p:
@@ -547,13 +538,12 @@ def compile(code):
   with open("lib.grp") as f:
     grplib = f.read()
   tree = parser.parse(grplib + code)
-  print(tree.pretty())
   with open("lib.lua") as f:
     lib = f.read()
   result = compile_tree(lib, tree)
   with open("out.lua", "w") as f:
     f.write(result)
-  subprocess.run(["luajit", "out.lua"])
+  subprocess.run(["lua54", "out.lua"])
 
 with open("in.grp") as f:
   compile(f.read())

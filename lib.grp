@@ -1,11 +1,67 @@
 
-{Map ~F} :: . :L match {
-  [] -> []
-  |> (
-    L /. {~F}
-    L /@ {Map ~F}
-    :>
-  )
+Max :: :N :M N match {
+  M < case M
+  else N
 } ::
 
+Range :: :Max :Min 
+  [] :Acc
+  while Min Max <=
+  loop (
+    Acc [Min] ++ :=Acc
+    Min 1 + :=Min
+  ) Acc
+::
 
+Indices :: :List
+  1 :I [] :Acc
+  while I List # <=
+  loop (
+    Acc [I] ++ :=Acc
+    I 1 + :=I
+  ) Acc
+::
+
+MakeEmpty :: :List
+  [] :Acc
+  while Acc # List # <
+  loop (
+    Acc [0] ++ :=Acc
+  ) Acc
+::
+
+DiagMatrix :: :Matrix
+  Matrix {$> MakeEmpty} :Empty
+  Empty %^ {$> :I
+    Empty I !! :Row
+    Row %^ {$> :J [I J]}
+  } {$> {$> {<> =}}}
+::
+
+Reverse :: :List
+  List # :I [] :Acc
+  while Acc # List # <
+  loop (
+    [(List I !!)]
+    Acc <|> ++ :=Acc
+    I 1 - :=I
+  ) Acc
+::
+
+{Map ~F} :: . match {
+  [] = case , []
+  else
+    (. /. {~F})
+    (<|> /@ {Map ~F}) :>
+} ::
+
+{ZipWith ~F} :: :Ys :Xs Ys match {
+  [] = case []
+  else Xs match {
+    [] = case []
+    else
+      (Xs /. Ys /. {~F} . |<)
+      (Xs /@ Ys /@ {ZipWith ~F})
+      :>
+  }
+} ::

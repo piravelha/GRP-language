@@ -15,9 +15,9 @@ infix: expression "`" term "`" expression
 
 match: "match" "{" match_case* final_case "}"
 
-match_case: atom "->" expression
+match_case: expression "case" expression
 
-final_case: "|>" expression
+final_case: "else" expression
 
 ?splice: id_splice
        | head_splice
@@ -33,7 +33,7 @@ if: "then" term
 
 ifelse: "then" term "else" atom
 
-while: "while" term "loop" atom
+while: "while" expression "loop" expression
 
 combinator: "{" (term | splice) (expression | splice)? "}"
 
@@ -45,6 +45,7 @@ set_symbol: ":=" NAME
 symbol: ":" NAME
 
 ?term: match
+     | while
      | infix
      | combinator
      | atom
@@ -61,7 +62,7 @@ symbol: ":" NAME
 
 ?identifier: NAME | OPERATOR
 
-OPERATOR: /[+\-*\/!@#$%&;,?\=\|<>_.^][+\-*\/!@#$%;,?\=\|<>_.^:]*|[+\-*\/!@#$%^&:;,?~=<>](?![A-Z])[+\-*\/!@#$%^&;,?=~<>]/
+OPERATOR: /[+\-*\/!@#$%&;,?\=\|<>_.^][+\-*\/!@#$%;,?\=\|<>_.^:]*|[+\-*\/!@#$%^&:;,?~=<>](?![A-Z=:])[+\-*\/!@#$%^&;,?=~<>]/
 
 NAME: /[A-Z][a-zA-Z0-9\/]*/
 
