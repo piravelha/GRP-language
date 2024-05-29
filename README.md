@@ -7,16 +7,22 @@ GRP is a simple, stack-based language currently written in Python, that transpil
 # Snippets
 
 ## Summing two numbers
-<img src=https://github.com/piravelha/GRP-language/assets/140568241/e32d7564-8be1-4012-996b-754ca421ff49>
+![Screenshot_20240528-222520_Termux](https://github.com/piravelha/GRP-language/assets/140568241/88aabf4a-33f9-493b-8efb-93418c841f11)
+
 
 ### Explanation
 Since GRP is a stack-based language, the program is read like a sequence of instructions, from left, to right.
 
-In this case, we have 4 instructions:
+In this case, we have 3 instructions declared as `MyNumber`:
 - **`1`**: Pushes *1* onto the stack.
 - **`2`**: Pushes *2* onto the stack.
 - **`+`**: Sums the two top elements of the stack, popping them, and pushes the result.
-- **`|<`**: Pops the first element of the stack and prints it to the console.
+
+After that, we have the evaluation block, which is always the last step of a program.
+
+- **`eval`**: Enters evaluation mode
+- **`MyNumber`**: Runs the instructions declared in MyNumber
+- **`|<`**: Pops the first element of the stack (`3`) and prints it to the console.
 
 So we expect the result of this program to be `3` (`print(1 + 2)`).
 
