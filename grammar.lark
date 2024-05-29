@@ -3,9 +3,13 @@
 
 ?program: declaration_* eval
 
-?declaration_: "\n"* (declaration | macro) "\n"*
+?declaration_: "\n"* (declaration | module | macro | data) "\n"*
 
 declaration: NAME "::" expression
+
+data: "data" NAME "::" expression
+
+module: "module" NAME "::" "(" declaration_* ")"
 
 macro: "{" NAME splice "}" "::" expression
 
@@ -45,7 +49,7 @@ symbol: ":" NAME
 
 OPERATOR: /[+\-*\/!@#$%&;,?\=\|<>_.^][+\-*\/!@#$%;,?\=\|<>_.^:]*/
 
-NAME: /[A-Z][a-zA-Z0-9]*/
+NAME: /[A-Z][a-zA-Z0-9\/]*/
 
 CHARACTER: /'[^']'/
  

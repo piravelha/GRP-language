@@ -1,8 +1,5 @@
 
-MeuPenisCm :: (
-  0 6942 Range {<> +}
-)
+Num :: 1 2 +
 
-eval MeuPenisCm ? "cm" ++ |<
-
+eval Num |<
 

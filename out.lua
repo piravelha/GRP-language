@@ -2,6 +2,9 @@ local function _repr(obj)
   if type(obj) ~= "table" then
     return tostring(obj)
   end
+  if getmetatable(obj) and getmetatable(obj).__tostring then
+    return tostring(obj)
+  end
   if obj._str then
     local allChars = true
     for i, x in pairs(obj) do
@@ -37,6 +40,30 @@ local function _repr(obj)
   end
 
   return str .. "]"
+end
+
+local function _eq(xs, ys)
+  if type(xs) ~= "table" or type(ys) ~= "table" then
+    return xs == ys
+  end
+
+  for i, x in pairs(xs) do
+    if _eq(x, ys[i]) == 0 then
+      return 0
+    end
+  end
+
+  for i, y in pairs(ys) do
+    if _eq(y, xs[i]) == 0 then
+      return 0
+    end
+  end
+   
+  if #xs ~= #ys then
+    return 0
+  end
+
+  return 1
 end
 
 local function _flatten(...)
@@ -95,6 +122,23 @@ function _invoke(args)
   head(args)
 end
 
+
+function _data()
+  name = _stack:pop()
+  args = _stack:pop()
+  _stack:push(setmetatable({
+    _type = name,
+    _args = args,
+  }, {
+    __tostring = function()
+      local str = _repr(name)
+      for _, a in pairs(args) do
+        str = _repr(a) .. " " .. str
+      end
+      return str
+    end
+  }))
+end
 
 
 function Sqrt()
@@ -302,7 +346,7 @@ a = _stack:pop()
 b = _stack:pop()
 c = 0
 for i, x in pairs(b) do
-if x == a then
+if _eq(a, x) then
 c = i
 break
 end
@@ -357,10 +401,11 @@ _stack:push(_var_22)
 end
 end
 end
-function MeuPenisCm()
-_stack:push(0)
-_stack:push(6942)
-Range()
+function Mean()
+-- dup (.) --
+a = _stack:pop()
+_stack:push(a)
+_stack:push(a)
 _var_27 = _stack:pop()
 _var_26 = nil
 for _, _var_28 in pairs(_var_27) do
@@ -380,19 +425,28 @@ _var_26 = _stack:pop()
 end
 end
 _stack:push(_var_26)
-end
-MeuPenisCm()
-a = _stack:pop()
-_stack:push(_split(_repr(a)))
-_stack:push({_str = true, "c", "m"})
--- append (++) --
+-- flip (<|>) --
 a = _stack:pop()
 b = _stack:pop()
-c = _clone(b)
-for x = 1, #a do
-table.insert(c, a[x])
+_stack:push(a)
+_stack:push(b)
+-- length (#) --
+a = _stack:pop()
+_stack:push(#a)
+-- / --
+a = _stack:pop()
+b = _stack:pop()
+_stack:push(b / a)
 end
-_stack:push(c)
+function Num()
+_stack:push(1)
+_stack:push(2)
+-- + --
+a = _stack:pop()
+b = _stack:pop()
+_stack:push(b + a)
+end
+Num()
 -- dump (|<) --
 a = _stack:pop()
 print(_repr(a))

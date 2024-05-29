@@ -2,6 +2,9 @@ local function _repr(obj)
   if type(obj) ~= "table" then
     return tostring(obj)
   end
+  if getmetatable(obj) and getmetatable(obj).__tostring then
+    return tostring(obj)
+  end
   if obj._str then
     local allChars = true
     for i, x in pairs(obj) do
@@ -37,6 +40,30 @@ local function _repr(obj)
   end
 
   return str .. "]"
+end
+
+local function _eq(xs, ys)
+  if type(xs) ~= "table" or type(ys) ~= "table" then
+    return xs == ys
+  end
+
+  for i, x in pairs(xs) do
+    if _eq(x, ys[i]) == 0 then
+      return 0
+    end
+  end
+
+  for i, y in pairs(ys) do
+    if _eq(y, xs[i]) == 0 then
+      return 0
+    end
+  end
+   
+  if #xs ~= #ys then
+    return 0
+  end
+
+  return 1
 end
 
 local function _flatten(...)
@@ -95,6 +122,23 @@ function _invoke(args)
   head(args)
 end
 
+
+function _data()
+  name = _stack:pop()
+  args = _stack:pop()
+  _stack:push(setmetatable({
+    _type = name,
+    _args = args,
+  }, {
+    __tostring = function()
+      local str = _repr(name)
+      for _, a in pairs(args) do
+        str = _repr(a) .. " " .. str
+      end
+      return str
+    end
+  }))
+end
 
 
 function Sqrt()

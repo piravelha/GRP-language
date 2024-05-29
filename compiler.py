@@ -165,11 +165,11 @@ def compile_operator(code, value):
     code += "-- equals (=) --\n"
     code += "a = _stack:pop()\n"
     code += "b = _stack:pop()\n"
-    code += "_stack:push(b == a and 1 or 0)\n"
+    code += "_stack:push(_eq(a, b))\n"
   elif value == "/=":
     code += "a = _stack:pop()\n"
     code += "b = _stack:pop()\n"
-    code += "_stack:push(b ~= a and 1 or 0)\n"
+    code += "_stack:push(not _eq(a, b))\n"
   elif value in ["<", ">", "<=", ">="]:
     code += "-- %s --\n" % value
     code += "a = _stack:pop()\n"
@@ -184,6 +184,12 @@ def compile_operator(code, value):
     code += "a = _stack:pop()\n"
     code += "_stack:push(a)\n"
     code += "_stack:push(a)\n"
+  elif value == ";":
+    code += "-- dup last (;) --\n"
+    code += "a = _stack:pop()\n"
+    code += "b = _stack:pop()"
+    code += "_stack:push(b)\n" 
+    code += "table.insert(_stack.values, a, b)\n"
   elif value == ",":
     code += "-- pop (,) --\n"
     code += "_stack:pop()\n"
@@ -222,6 +228,9 @@ def compile_operator(code, value):
   elif value == "?":
     code += "a = _stack:pop()\n"
     code += "_stack:push(_split(_repr(a)))\n"
+  elif value == "???":
+    code += "-- debug stack (???) --\n"
+    code += "_stack:print()\n"
   elif value == "!!":
     code += "-- index (!!) --\n"
     code += "a = _stack:pop()\n"
@@ -243,13 +252,17 @@ def compile_operator(code, value):
     code += "table.insert(b, a[i])\n"
     code += "end\n"
     code += "_stack:push(b)\n"
+  elif value == "/:":
+    code += "a = _stack:pop()\n"
+    code += "b = _stack:pop()\n"
+    code += "_stack:push(b._args[a])\n"
   elif value == "<#":
     code += "-- find (<#) --\n"
     code += "a = _stack:pop()\n"
     code += "b = _stack:pop()\n"
     code += "c = 0\n"
     code += "for i, x in pairs(b) do\n"
-    code += "if x == a then\n"
+    code += "if _eq(a, x) then\n"
     code += "c = i\n"
     code += "break\n"
     code += "end\n"
@@ -288,7 +301,11 @@ def compile_operator(code, value):
   return code
 
 def compile_name(code, value):
-  code += "%s()\n" % value
+  path = value.split("/")
+  final = "%s" % path[0]
+  for p in path[1:]:
+    final = "%s()[\"%s\"]" % (final, p)
+  code += "%s()\n" % final
   return code
 
 def compile_array(code, values):
@@ -320,6 +337,34 @@ def compile_declaration(code, name, *values):
   code += "end\n"
   sym_marks = re.findall(r"&SYM_\d+&", code)
   code = code.replace(sym_marks[0], "")
+  return code
+
+def compile_data(code, name, value):
+  code += "function %s()\n" % name
+  code = "&SYM_%d&" % var_count() + code
+  code = compile_tree(code, value)
+  code += "_stack:push(\"%s\")\n" % name
+  code += "_data()\n"
+  code += "end\n"
+  sym_marks = re.findall(r"&SYM_\d+&", code)
+  code = code.replace(sym_marks[0], "")
+  return code
+
+
+
+def compile_module(code, name, *decls):
+  code += "function %s()\n" % name
+  dec_names = []
+  for dec in decls:
+    code += "local "
+    code = compile_tree(code, dec)
+    dec = compile_tree("", dec)
+    dec_names.append(dec.split("()\n")[0].split("function ")[1])
+  code += "return {\n"
+  for n in dec_names:
+    code += "%s = %s,\n" % (n, n)
+  code += "}\n"
+  code += "end\n"
   return code
 
 def compile_expression(code, atoms):
@@ -399,10 +444,14 @@ def compile_tree(code, tree):
     return compile_ifelse(code, *tree.children)
   if tree.data == "while":
     return compile_while(code, *tree.children)
+  if tree.data == "module":
+    return compile_module(code, *tree.children)
+  if tree.data == "data":
+    return compile_data(code, *tree.children)
   assert False, "Unimplemented: %s" % tree.data
 
 def compile(code):
-  code = re.sub(r";.+", "", code)
+  code = re.sub(r";;.*", "", code, flags=re.MULTILINE)
   with open("lib.grp") as f:
     grplib = f.read()
   tree = parser.parse(grplib + code)
