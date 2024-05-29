@@ -1,57 +1,6 @@
 
-{RunLog ~X} :: :A (
-  {%# ~X} 0 = if (
-    A
-  )
-  else (
-    A {~.X} . |< {RunLog ~@X}
-  )
-)
-
-Test :: {
-  RunLog
-  (1 +) ;; prints 5
-  (2 *) ;; prints 10
-  (5 /) ;; prints 2
-  (3 ^) ;; prints 8
-  (5 %) ;; prints 3
+0 . match {
+  0 -> , 0
+  |> 2 +
 }
-
-eval 4 Test
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+|<

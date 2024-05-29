@@ -5,7 +5,7 @@ local function _repr(obj)
   if getmetatable(obj) and getmetatable(obj).__tostring then
     return tostring(obj)
   end
-  if obj._str then
+  if #obj > 0 then
     local allChars = true
     for i, x in pairs(obj) do
       if type(i) == "number" then
@@ -28,10 +28,10 @@ local function _repr(obj)
   for i, elem in pairs(obj) do
     if type(i) == "number" then
       local r = _repr(elem)
-      if r:find("%s") and not r:sub(1, 1) == "[" and not r:sub(-1, -1) == "]" then
+      if r:find("%s") and r:sub(1, 1) ~= "[" and r:sub(-1, -1) ~= "]" then
         str = str .. "(" .. r .. ")"
       else
-        str = str .. _repr(elem)
+        str = str .. r
       end
       if i < #obj then
         str = str .. " "
@@ -126,8 +126,8 @@ end
 
 
 function _data()
-  name = _stack:pop()
-  args = _stack:pop()
+  local name = _stack:pop()
+  local args = _stack:pop()
   _stack:push(setmetatable({
     _type = name,
     _args = args,

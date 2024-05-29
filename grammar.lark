@@ -1,17 +1,23 @@
 
 ?start: program
 
-?program: declaration_* eval
+?program: (declaration | macro)* expression
 
-?declaration_: "\n"* (declaration | module | macro | data) "\n"*
-
-declaration: NAME "::" expression
+declaration: identifier "::" expression "::"
 
 data: "data" NAME "::" expression
 
-module: "module" NAME "::" "(" declaration_* ")"
+module: "module" NAME "::" "(" declaration* ")"
 
-macro: "{" NAME splice "}" "::" expression
+macro: "{" NAME splice "}" "::" expression "::"
+
+infix: expression "`" term "`" expression
+
+match: "match" "{" match_case* final_case "}"
+
+match_case: atom "->" expression
+
+final_case: "|>" expression
 
 ?splice: id_splice
        | head_splice
@@ -19,41 +25,43 @@ macro: "{" NAME splice "}" "::" expression
 
 id_splice: "~" NAME
 head_splice: "~." NAME
-tail_splice: "~@" NAME
+tail_splice: "~:" NAME
 
-?expression_: "\n"* expression "\n"*
+expression: term+
 
-expression: atom+
-paren: "(" "\n"* ("\n"* atom "\n"*)+ "\n"* ")"
+if: "then" term
 
-combinator: "{" "\n"* ("\n"* (atom | splice) "\n"*)+ "\n"* "}"
+ifelse: "then" term "else" atom
 
-eval: "eval" "\n"* ("\n"* atom "\n"*)+ "\n"*
+while: "while" term "loop" atom
 
-if: "if" "\n"* atom
+combinator: "{" (term | splice) (expression | splice)? "}"
 
-ifelse: "if" "\n"* atom "\n"* "else" "\n"* atom
 
-while: "while" "\n"* atom "\n"* "loop" "\n"* atom
+array: "[" (term | NUMBER)+ "]" | "[" "]"
 
-array: "[" "\n"* ("\n"* (atom | NUMBER) "\n"*)+ "]" | "[" "\n"* "]"
+set_symbol: ":=" NAME
 
 symbol: ":" NAME
 
-?atom: STRING
-     | CHARACTER
-     | OPERATOR
-     | NAME
-     | symbol
-     | array
-     | paren
+?term: match
+     | infix
      | combinator
-     | if
-     | ifelse
-     | while
-     | NUMBER
+     | atom
 
-OPERATOR: /[+\-*\/!@#$%&;,?\=\|<>_.^][+\-*\/!@#$%;,?\=\|<>_.^:]*/
+?atom: NAME
+     | STRING
+     | OPERATOR
+     | CHARACTER
+     | NUMBER
+     | array
+     | set_symbol
+     | symbol
+     | "(" expression ")"
+
+?identifier: NAME | OPERATOR
+
+OPERATOR: /[+\-*\/!@#$%&;,?\=\|<>_.^][+\-*\/!@#$%;,?\=\|<>_.^:]*|[+\-*\/!@#$%^&:;,?~=<>](?![A-Z])[+\-*\/!@#$%^&;,?=~<>]/
 
 NAME: /[A-Z][a-zA-Z0-9\/]*/
 
@@ -63,4 +71,4 @@ STRING: /"[^"]*"/
 
 NUMBER: /-?\d+(\.\d+)?/
 
-%ignore /[ \r\t]+/
+%ignore /\s+/

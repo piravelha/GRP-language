@@ -27,7 +27,6 @@ def compile_character(code, value):
   code += "_stack:push(%s)\n" % value
   return code
 
-
 def compile_macro(code, name, splice, body):
   code += "function %s(%s)\n" % (name, splice.children[0])
   code = compile_tree(code, body)
@@ -36,18 +35,17 @@ def compile_macro(code, name, splice, body):
 
 def compile_combinator(code, operators):
   if operators[0] == "$>":
-    temp = new_var()
-    code += "%s = {}\n" % temp
-    a = new_var()
-    i = new_var()
-    x = new_var()
-    code += "%s = _stack:pop()\n" % a
-    code += "for %s, %s in pairs(%s) do\n" % (i, x, a)
-    code += "_stack:push(%s)\n" % x
-    code = compile_combinator(code, operators[1:])
-    code += "table.insert(%s, _stack:pop())\n" % (temp)
-    code += "end\n"
-    code += "_stack:push(_clone(%s))\n" % temp
+    code = compile_combinator(
+      code,
+      [Token("NAME", "Map"),
+      *operators[1:]]
+    )
+  elif operators[0] == "$:>":
+    code = compile_combinator(
+      code,
+      [Token("NAME", "IndexMap"),
+      *operators[1:]]
+    )
   elif operators[0] == "$|>":
     temp = new_var()
     code += "%s = {}\n" % temp
@@ -134,6 +132,13 @@ def compile_combinator(code, operators):
       [Token("NAME", "__HASH"),
       *operators[1:]]
     )
+  elif operators[0] == "IsType":
+    code += "_stack:push(\"_typeof\")\n"
+    code += "local _t = %s()\n" % operators[1]
+    code = compile_combinator(code, operators[2:])
+    code += "local _o = _stack:pop()\n"
+    code += "_stack:push(_eq(_o._type, _t))\n"
+
   else:
     ops = "_flatten("
     for i, o in enumerate(operators):
@@ -152,6 +157,7 @@ def compile_combinator(code, operators):
           ops += ", "
       else:
         if isinstance(o, Token) and o.type == "NAME":
+          o = compile_name("", o)[:-3]
           ops += "{" + o + "}"
         else:
           o = compile_tree("", o)
@@ -177,6 +183,11 @@ def compile_operator(code, value):
     code += "a = _stack:pop()\n"
     code += "b = _stack:pop()\n"
     code += "_stack:push(b %s a)\n" % value
+  elif value == "//":
+    code += "-- // --\n"
+    code += "a = _stack:pop()\n"
+    code += "b = _stack:pop()\n"
+    code += "_stack:push(math.ceil(b / a))\n"
   elif value == "^-":
     code += "-- unary minus (^-) --\n"
     code += "a = _stack:pop()\n"
@@ -231,6 +242,13 @@ def compile_operator(code, value):
     code += "b = _stack:pop()\n"
     code += "_stack:push(a)\n"
     code += "_stack:push(b)\n"
+  elif value == ":>":
+    code += "-- cons (:>) --\n"
+    code += "a = _stack:pop()\n"
+    code += "b = _stack:pop()\n"
+    code += "c = _clone(a)\n"
+    code += "table.insert(c, 1, b)\n"
+    code += "_stack:push(c)\n"
   elif value == "++":
     code += "-- append (++) --\n"
     code += "a = _stack:pop()\n"
@@ -286,7 +304,7 @@ def compile_operator(code, value):
     code += "b = _stack:pop()\n"
     code += "c = 0\n"
     code += "for i, x in pairs(b) do\n"
-    code += "if _eq(a, x) then\n"
+    code += "if _eq(a, x) ~= 0 then\n"
     code += "c = i\n"
     code += "break\n"
     code += "end\n"
@@ -303,14 +321,10 @@ def compile_operator(code, value):
     code += "_stack:push(a ~= 0 and b or 0)\n"
   elif value == "%^":
     code += "-- indices (%^) --\n"
-    code += "a = _stack:pop()\n"
-    code += "b = {}\n"
-    code += "for i, x in pairs(a) do\n"
-    code += "if x ~= 0 then\n"
-    code += "table.insert(b, i)\n"
-    code += "end\n"
-    code += "end\n"
-    code += "_stack:push(b)\n"
+    code += "Indices()\n"
+  elif value == "|^^|":
+    code += "-- transpose (|^^|) --\n"
+    code += "Transpose()\n"
   elif value == "<:>":
     code += "a = _stack:pop()\n"
     code += "b = _stack:pop()\n"
@@ -321,8 +335,32 @@ def compile_operator(code, value):
     code += "end\n"
     code += "_stack:push(c)\n"
   else:
-    assert False, "Invalid operator: %s" % value
+    op = "".join(["_%d" % ord(c) for c in value])
+    code += "%s()\n" % op
   return code
+
+def compile_match(code, cases):
+  var = "_match_%d" % var_count()
+  code += "local %s = _stack:pop()\n" % (var)
+  for case in cases:
+    if len(case.children) == 2:
+      p, b = case.children
+      code = compile_tree(code, p)
+    else:
+      p, b = None, case.children[0]
+    if p:
+      code += "if _eq(%s, _stack:pop()) ~= 0 then\n" % var
+    code = compile_tree(code, b)
+    code += "%s = _stack:pop()\n" % var
+    if p:
+      code += "else\n"
+
+  code += "end\n" * (len(cases) - 1)
+  code += "_stack:push(%s)\n" % var
+  return code
+
+def compile_infix(code, left, op, right):
+  return compile_expression(code, [left, right, op])
 
 def compile_name(code, value):
   path = value.split("/")
@@ -348,12 +386,26 @@ def compile_symbol(code, value):
     mark = "_%s" % marks[0][0]
   var = "_symb_%d%s" % (var_count(), mark)
   code += "local %s = _stack:pop()\n" % var
+  code += "local %s = function()\n" % value
+  code += "_stack:push(%s)\n" % var
+  code += "end\n"
+  return code
+
+def compile_set_symbol(code, value):
+  marks = re.findall(r"&SYM_(\d+)&", code)
+  mark = ""
+  if marks:
+    mark = "_%s" % marks[0][0]
+  var = "_symb_%d%s" % (var_count(), mark)
+  code += "%s = _stack:pop()\n" % var
   code += "%s = function()\n" % value
   code += "_stack:push(%s)\n" % var
   code += "end\n"
   return code
 
 def compile_declaration(code, name, *values):
+  if name.type == "OPERATOR":
+    name = compile_operator("", name)[:-3]
   code += "function %s()\n" % name
   code = "&SYM_%d&" % var_count() + code
   for val in values:
@@ -366,6 +418,10 @@ def compile_declaration(code, name, *values):
 def compile_data(code, name, value):
   code += "function %s()\n" % name
   code = "&SYM_%d&" % var_count() + code
+  code += "if _stack.values[1] == \"_typeof\" then\n"
+  code += "_stack:pop()\n"
+  code += "return \"%s\"\n" % name
+  code += "end\n"
   code = compile_tree(code, value)
   code += "_stack:push(\"%s\")\n" % name
   code += "_data()\n"
@@ -383,7 +439,7 @@ def compile_module(code, name, *decls):
     code += "local "
     code = compile_tree(code, dec)
     dec = compile_tree("", dec)
-    dec_names.append(dec.split("()\n")[0].split("function ")[1])
+    dec_names.append(dec.split("(")[0].split("function ")[1])
   code += "return {\n"
   for n in dec_names:
     code += "%s = %s,\n" % (n, n)
@@ -446,6 +502,8 @@ def compile_tree(code, tree):
       return compile_character(code, tree.value)
   if tree.data == "symbol":
     return compile_symbol(code, *tree.children)
+  if tree.data == "set_symbol":
+    return compile_set_symbol(code, *tree.children)
   if tree.data == "array":
     return compile_array(code, tree.children)
   if tree.data == "declaration":
@@ -460,20 +518,28 @@ def compile_tree(code, tree):
     return compile_expression(code, tree.children)
   if tree.data == "combinator":
     return compile_combinator(code, tree.children)
+  if tree.data == "clean_combinator":
+    return compile_clean_combinator(code, *tree.children)
   if tree.data == "macro":
     return compile_macro(code, *tree.children)
   if tree.data == "id_splice":
     return compile_splice(code, *tree.children)
+  if tree.data == "infix":
+    return compile_infix(code, *tree.children)
   if tree.data == "if":
     return compile_if(code, *tree.children)
   if tree.data == "ifelse":
     return compile_ifelse(code, *tree.children)
   if tree.data == "while":
     return compile_while(code, *tree.children)
+  if tree.data == "match":
+    return compile_match(code, tree.children)
   if tree.data == "module":
     return compile_module(code, *tree.children)
   if tree.data == "data":
     return compile_data(code, *tree.children)
+  if tree.data == "expression_n":
+    return compile_expression(code, tree.children)
   assert False, "Unimplemented: %s" % tree.data
 
 def compile(code):
@@ -481,6 +547,7 @@ def compile(code):
   with open("lib.grp") as f:
     grplib = f.read()
   tree = parser.parse(grplib + code)
+  print(tree.pretty())
   with open("lib.lua") as f:
     lib = f.read()
   result = compile_tree(lib, tree)
