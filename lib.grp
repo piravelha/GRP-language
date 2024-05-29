@@ -1,8 +1,24 @@
 
+Not :: :B match {
+  if B case 0
+  else 1
+} ::
+
+! :: Not ::
+
 Max :: :N :M N match {
-  M < case M
+  if M < case M
   else N
 } ::
+
+=+= :: Max ::
+
+Min :: :N :M N match {
+  if M > case M
+  else N
+} ::
+
+=-= :: Min ::
 
 Range :: :Max :Min 
   [] :Acc
@@ -13,55 +29,68 @@ Range :: :Max :Min
   ) Acc
 ::
 
-Indices :: :List
+Indices :: :Xs
   1 :I [] :Acc
-  while I List # <=
-  loop (
-    Acc [I] ++ :=Acc
-    I 1 + :=I
-  ) Acc
-::
-
-MakeEmpty :: :List
-  [] :Acc
-  while Acc # List # <
-  loop (
-    Acc [0] ++ :=Acc
-  ) Acc
-::
-
-DiagMatrix :: :Matrix
-  Matrix {$> MakeEmpty} :Empty
-  Empty %^ {$> :I
-    Empty I !! :Row
-    Row %^ {$> :J [I J]}
-  } {$> {$> {<> =}}}
+  (while I Xs # <=
+  loop (Acc [I] ++) :=Acc
+    (I 1 +) :=I)
+  Acc
 ::
 
 Reverse :: :List
   List # :I [] :Acc
-  while Acc # List # <
-  loop (
-    [(List I !!)]
-    Acc <|> ++ :=Acc
-    I 1 - :=I
-  ) Acc
+  (while Acc # List # <
+  loop (List I !! |_|)
+    (Acc <|> ++) :=Acc
+    (I 1 -) :=I)
+  Acc
 ::
 
+|_| :: :E [E] ::
+
+<_> :: Reverse ::
+
 {Map ~F} :: . match {
-  [] = case , []
+  if [] = case , []
   else
     (. /. {~F})
     (<|> /@ {Map ~F}) :>
 } ::
 
+{FlatMap ~F} :: . match {
+  if [] = case , []
+  else
+    (. /. {~F})
+    (<|> /@ {Map ~F}) ++
+} ::
+
 {ZipWith ~F} :: :Ys :Xs Ys match {
-  [] = case []
+  if [] = case []
   else Xs match {
-    [] = case []
+    if [] = case []
     else
       (Xs /. Ys /. {~F})
-      (Xs /@ Ys /@ {ZipWith ~F})
-      :>
+      (Xs /@ Ys /@ {ZipWith ~F}) :>
   }
+} ::
+
+MinRowLength ::
+  {$> #} {<> Min}
+::
+
+Transpose :: :Matrix
+  1 Matrix MinRowLength Range {$> :I
+    Matrix I !! :Row
+    Matrix %^ {$> :J
+      Matrix J !! I !!
+    }
+  }
+::
+
+{TakeWhile ~F} :: . :Xs match {
+  if [] = case []
+  if /. {~F} Not case []
+  else
+    (Xs /.)
+    (Xs /@ {TakeWhile ~F}) :>
 } ::

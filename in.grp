@@ -1,15 +1,8 @@
-IsXMatrix :: :List 
-  List . DiagMatrix .
-  {$> Reverse}
-  {<*> {<*> Max}} . :XMatrix
-  {<*> {<*> + . &}}
-  XMatrix =
+
+LongestPrefix :: :Strs
+  Strs Transpose
+  {$> . :Str {TakeWhile Str 1 !! =}} . :Prefixes
+  {TakeWhile # Prefixes 1 !! # =} {$> /.}
 ::
 
-[[1 0 0 0 4]
- [0 3 0 5 0]
- [0 0 4 0 0]
- [0 1 0 7 0]
- [4 0 0 0 8]] IsXMatrix |<
-
-
+["flower" "flow" "flight"] LongestPrefix |<

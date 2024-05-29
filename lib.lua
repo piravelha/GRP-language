@@ -1,4 +1,24 @@
-local function _repr(obj)
+local function _matrix_repr(obj)
+  if type(obj) ~= "table" then
+    return tostring(obj)
+  end
+  if getmetatable(obj) and getmetatable(obj).__tostring then
+      return tostring(obj)
+  end
+  local str = "["
+  for i, elem in pairs(obj) do
+    if type(i) == "number" then
+      local r = _repr(elem)
+      str = str .. r
+      if i < #obj then
+        str = str .. "\n "
+      end
+    end
+  end
+  return str .. "]"
+end
+
+function _repr(obj)
   if type(obj) ~= "table" then
     return tostring(obj)
   end
@@ -25,7 +45,11 @@ local function _repr(obj)
     end
   end
   local str = "["
+  local allTables = true
   for i, elem in pairs(obj) do
+    if type(elem) ~= "table" then
+      allTables = false
+    end
     if type(i) == "number" then
       local r = _repr(elem)
       if r:find("%s") and r:sub(1, 1) ~= "[" and r:sub(-1, -1) ~= "]" then
@@ -48,14 +72,18 @@ local function _eq(xs, ys)
   end
 
   for i, x in pairs(xs) do
-    if _eq(x, ys[i]) == 0 then
-      return 0
+    if type(i) == "number" then
+      if _eq(x, ys[i]) == 0 then
+        return 0
+      end
     end
   end
 
   for i, y in pairs(ys) do
-    if _eq(y, xs[i]) == 0 then
-      return 0
+    if type(i) == "number" then
+      if _eq(y, xs[i]) == 0 then
+        return 0
+      end
     end
   end
    

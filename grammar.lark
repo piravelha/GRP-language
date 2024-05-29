@@ -5,17 +5,17 @@
 
 declaration: identifier "::" expression "::"
 
-data: "data" NAME "::" expression
+data: "data" identifier "::" expression
 
 module: "module" NAME "::" "(" declaration* ")"
 
-macro: "{" NAME splice "}" "::" expression "::"
+macro: "{" identifier splice "}" "::" expression "::"
 
 infix: expression "`" term "`" expression
 
 match: "match" "{" match_case* final_case "}"
 
-match_case: expression "case" expression
+match_case: "if" expression "case" expression
 
 final_case: "else" expression
 
@@ -50,9 +50,8 @@ symbol: ":" NAME
      | combinator
      | atom
 
-?atom: NAME
+?atom: identifier
      | STRING
-     | OPERATOR
      | CHARACTER
      | NUMBER
      | array

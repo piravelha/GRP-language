@@ -335,7 +335,7 @@ def compile_match(code, cases):
   for case in cases:
     if len(case.children) == 2:
       p, b = case.children
-      code += "_stack:push(%s)" % var
+      code += "_stack:push(%s)\n" % var
       code = compile_tree(code, p)
     else:
       p, b = None, case.children[0]
@@ -543,7 +543,7 @@ def compile(code):
   result = compile_tree(lib, tree)
   with open("out.lua", "w") as f:
     f.write(result)
-  subprocess.run(["luajit", "out.lua"])
+  subprocess.run(["lua54", "out.lua"])
 
 with open("in.grp") as f:
   compile(f.read())
